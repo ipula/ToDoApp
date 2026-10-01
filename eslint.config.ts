@@ -32,6 +32,9 @@ export default defineConfig(
       "@typescript-eslint/consistent-type-imports": "error",
       // Allow numbers in template strings, e.g. `at most ${MAX_LENGTH} characters`.
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+            // Allow intentionally unused parameters when prefixed with "_",
+      // e.g. `_req`, or `_next` in Express error handlers (which need 4 params).
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },
   },
 
