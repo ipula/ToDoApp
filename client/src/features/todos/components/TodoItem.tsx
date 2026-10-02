@@ -10,11 +10,11 @@ interface TodoItemProps {
 }
 
 /**
- * A single todo row with its own toggle and delete actions.
+ * One line on the sheet: checkbox in the margin, the todo, and its actions.
  *
  * Each row owns its mutations, so a pending request or an error only
- * affects that row, not the whole list. Done todos are faded with a
- * strikethrough so they read as completed at a glance.
+ * affects that row. Checking a todo draws an ink line through its title
+ * (see .todo-title in index.css).
  */
 export function TodoItem({ todo }: TodoItemProps) {
   const toggleTodo = useToggleTodo();
@@ -25,91 +25,113 @@ export function TodoItem({ todo }: TodoItemProps) {
   const error = toggleTodo.error ?? deleteTodo.error;
   const checkboxId = `todo-${todo._id}`;
 
-  // Busy rows are dimmed and not clickable; done rows are faded.
-  const rowState = isBusy ? "pointer-events-none opacity-50" : todo.done ? "opacity-60" : "";
-
   return (
     <li
-      className={`rounded-lg border border-slate-200 bg-white p-4 transition-opacity ${rowState}`}
       aria-busy={isBusy}
+      className={`group border-b border-rule last:border-b-0 ${
+        isBusy ? "pointer-events-none opacity-60" : ""
+      }`}
     >
-      <div className="flex items-start gap-3">
-        <input
-          id={checkboxId}
-          type="checkbox"
-          checked={todo.done}
-          disabled={isBusy}
-          onChange={() => {
-            toggleTodo.mutate(todo._id);
-          }}
-          className="mt-1 size-5 shrink-0 cursor-pointer accent-blue-600"
-        />
+      <div className="flex min-h-14 items-start">
+        {/* Margin column */}
+        <div className="flex w-12 shrink-0 justify-center pt-[1.15rem] sm:w-14">
+          <input
+            id={checkboxId}
+            type="checkbox"
+            checked={todo.done}
+            disabled={isBusy}
+            onChange={() => {
+              toggleTodo.mutate(todo._id);
+            }}
+            className="todo-checkbox"
+          />
+        </div>
 
-        {/* Clicking the text toggles too, via the label. */}
-        <label htmlFor={checkboxId} className="min-w-0 flex-1 cursor-pointer">
-          <span
-            className={`block font-medium break-words ${
-              todo.done ? "text-slate-500 line-through" : ""
+        {/*
+          Text and actions: stacked on narrow screens so titles get the full
+          width, side by side from the sm breakpoint up.
+        */}
+        <div className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-start">
+          {/* Clicking the text toggles too, via the label. */}
+          <label htmlFor={checkboxId} className="min-w-0 flex-1 cursor-pointer py-4 pr-4 pl-4">
+            <span
+              data-done={todo.done}
+              className="todo-title text-[1.0625rem] leading-snug font-medium break-words"
+            >
+              {todo.title}
+            </span>
+            {todo.description && (
+              <span
+                className={`mt-1 block text-sm leading-relaxed break-words text-ink-soft transition-opacity ${
+                  todo.done ? "opacity-60" : ""
+                }`}
+              >
+                {todo.description}
+              </span>
+            )}
+          </label>
+
+          {/*
+            With a mouse, actions appear on hover or keyboard focus to keep the
+            sheet calm; on touch screens they are always visible.
+          */}
+          <div
+            className={`-mt-2 flex shrink-0 items-center gap-1 pb-3 pl-2 text-sm transition-opacity sm:mt-0 sm:py-3 sm:pr-3 sm:pl-0 ${
+              isConfirmingDelete
+                ? ""
+                : "pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100"
             }`}
           >
-            {todo.title}
-          </span>
-          {todo.description && (
-            <span className="mt-1 block text-sm break-words text-slate-600">
-              {todo.description}
-            </span>
-          )}
-        </label>
-
-        <div className="flex shrink-0 items-center gap-2 text-sm">
-          {isConfirmingDelete ? (
-            <>
-              <span className="text-slate-600">Delete?</span>
-              <button
-                type="button"
-                onClick={() => {
-                  deleteTodo.mutate(todo._id);
-                }}
-                className="rounded-md bg-red-600 px-3 py-1 font-medium text-white hover:bg-red-700"
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsConfirmingDelete(false);
-                }}
-                className="rounded-md px-3 py-1 text-slate-600 hover:bg-slate-100"
-              >
-                No
-              </button>
-            </>
-                    ) : (
-            <>
-              <Link
-                to={`/todos/${todo._id}/edit`}
-                aria-label={`Edit "${todo.title}"`}
-                className="rounded-md px-3 py-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-              >
-                Edit
-              </Link>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsConfirmingDelete(true);
-                }}
-                aria-label={`Delete "${todo.title}"`}
-                className="rounded-md px-3 py-1 text-slate-500 hover:bg-red-50 hover:text-red-600"
-              >
-                Delete
-              </button>
-            </>
-          )}
+            {isConfirmingDelete ? (
+              <>
+                <span className="pr-1 text-ink-soft">Delete?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    deleteTodo.mutate(todo._id);
+                  }}
+                  className="rounded-md bg-margin px-3 py-1 font-medium text-paper hover:bg-margin/90"
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsConfirmingDelete(false);
+                  }}
+                  className="rounded-md px-3 py-1 text-ink-soft hover:bg-desk"
+                >
+                  Keep
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to={`/todos/${todo._id}/edit`}
+                  viewTransition
+                  aria-label={`Edit "${todo.title}"`}
+                  className="rounded-md px-3 py-1 text-ink-soft hover:bg-desk hover:text-ink"
+                >
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsConfirmingDelete(true);
+                  }}
+                  aria-label={`Delete "${todo.title}"`}
+                  className="rounded-md px-3 py-1 text-ink-soft hover:bg-margin/10 hover:text-margin"
+                >
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-600">
+        <p role="alert" className="pb-3 pl-16 text-sm text-margin sm:pl-[4.5rem]">
           {getErrorMessage(error)}
         </p>
       )}

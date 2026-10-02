@@ -5,16 +5,16 @@ interface ErrorStateProps {
   onRetry?: () => void;
 }
 
-/** Full-width error message with an optional retry action. */
+/** Error message on the page, marked with the margin red, with an optional retry. */
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
-    <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-      <p className="font-medium text-red-800">{message}</p>
+    <div role="alert" className="paper-sheet border-l-4 border-margin p-6">
+      <p className="font-medium">{message}</p>
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="mt-4 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          className="mt-4 rounded-md bg-ink px-4 py-2 text-sm font-medium text-paper hover:bg-ink/90"
         >
           Try again
         </button>

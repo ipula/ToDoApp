@@ -7,13 +7,13 @@ interface EmptyStateProps {
   action?: ReactNode;
 }
 
-/** Friendly placeholder for when there is nothing to show yet. */
+/** A blank ruled page with a short prompt, for when there is nothing to show yet. */
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center">
-      <p className="text-lg font-medium">{title}</p>
-      <p className="mt-1 text-slate-500">{description}</p>
-      {action && <div className="mt-6">{action}</div>}
+    <div className="paper-sheet relative overflow-hidden px-6 py-14 text-center">
+      <p className="text-xl font-semibold">{title}</p>
+      <p className="mt-1 text-ink-soft">{description}</p>
+      {action && <div className="mt-8">{action}</div>}
     </div>
   );
 }

@@ -9,7 +9,7 @@ export function TodoCreatePage() {
 
   return (
     <section>
-      <h1 className="mb-6 text-2xl font-semibold">New todo</h1>
+      <h1 className="mb-6 text-3xl font-bold tracking-tight sm:text-4xl">New Todo</h1>
       <TodoForm
         submitLabel="Add todo"
         cancelTo="/todos"
@@ -19,7 +19,7 @@ export function TodoCreatePage() {
             // Send nothing rather than an empty string when left blank.
             ...(values.description ? { description: values.description } : {}),
           });
-          await navigate("/todos");
+          await navigate("/todos", { viewTransition: true });
         }}
       />
     </section>

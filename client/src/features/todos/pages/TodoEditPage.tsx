@@ -32,7 +32,7 @@ export function TodoEditPage() {
           title="Todo not found"
           description="It may have been deleted."
           action={
-            <Link to="/todos" className="text-blue-600 hover:underline">
+            <Link to="/todos" viewTransition className="font-medium underline underline-offset-4">
               Back to your todos
             </Link>
           }
@@ -51,7 +51,7 @@ export function TodoEditPage() {
 
   return (
     <section>
-      <h1 className="mb-6 text-2xl font-semibold">Edit todo</h1>
+      <h1 className="mb-6 text-3xl font-bold tracking-tight sm:text-4xl">Edit Todo</h1>
       <TodoForm
         // Remount with fresh values if the todo changes on the server
         // while this page is open (e.g. a background refetch).
@@ -62,7 +62,7 @@ export function TodoEditPage() {
         onSubmit={async (values) => {
           // Always send both fields: an empty description clears it.
           await updateTodo.mutateAsync({ id, input: values });
-          await navigate("/todos");
+          await navigate("/todos", { viewTransition: true });
         }}
       />
     </section>
