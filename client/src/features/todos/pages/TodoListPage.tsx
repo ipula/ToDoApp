@@ -1,10 +1,12 @@
-import { Link } from "react-router";
+import { Link, Navigate, useSearchParams } from "react-router";
 import { getErrorMessage } from "../../../shared/api/ApiError.ts";
 import { EmptyState } from "../../../shared/components/EmptyState.tsx";
 import { ErrorState } from "../../../shared/components/ErrorState.tsx";
 import { LoadingState } from "../../../shared/components/LoadingState.tsx";
+import { Pagination } from "../components/Pagination.tsx";
 import { TodoList } from "../components/TodoList.tsx";
 import { useTodos } from "../hooks/useTodos.ts";
+import { pageCount, pageSearch, parsePage } from "../pagination.ts";
 
 /** Heading that states, in plain words, how much is left. */
 function remainingHeading(remaining: number): string {
@@ -14,11 +16,13 @@ function remainingHeading(remaining: number): string {
 }
 
 /**
- * Lists all todos.
+ * Lists todos one page at a time; the page number lives in the URL (?page=).
  * Handles every state the data can be in: loading, failed, empty, and loaded.
  */
 export function TodoListPage() {
-  const { data: todos, isPending, isError, error, refetch } = useTodos();
+  const [searchParams] = useSearchParams();
+  const page = parsePage(searchParams.get("page"));
+  const { data, isPending, isError, error, refetch, isPlaceholderData } = useTodos(page);
 
   if (isPending) {
     return <LoadingState label="Loading your todos…" />;
@@ -35,7 +39,9 @@ export function TodoListPage() {
     );
   }
 
-  if (todos.length === 0) {
+  const { todos, total, remaining } = data;
+
+  if (total === 0) {
     return (
       <EmptyState
         title="Nothing on the list yet"
@@ -45,7 +51,12 @@ export function TodoListPage() {
     );
   }
 
-  const remaining = todos.filter((todo) => !todo.done).length;
+  // Past the last page, e.g. after deleting the only todo on the last page,
+  // or from an old link. Go to the last page that has todos.
+  const totalPages = pageCount(total);
+  if (todos.length === 0 && !isPlaceholderData) {
+    return <Navigate to={{ search: pageSearch(totalPages) }} replace />;
+  }
 
   return (
     <section>
@@ -55,7 +66,16 @@ export function TodoListPage() {
         </h1>
         <NewTodoLink />
       </div>
-      <TodoList todos={todos} />
+
+      {/* While the next page loads, the current one stays visible but dimmed. */}
+      <div
+        aria-busy={isPlaceholderData}
+        className={`transition-opacity ${isPlaceholderData ? "opacity-60" : ""}`}
+      >
+        <TodoList todos={todos} />
+      </div>
+
+      {totalPages > 1 && <Pagination page={page} totalPages={totalPages} />}
     </section>
   );
 }
@@ -68,7 +88,7 @@ function NewTodoLink() {
       viewTransition
       className="shrink-0 rounded-md bg-ink px-4 py-2 font-medium text-paper hover:bg-ink/90"
     >
-      New todo
+      New Todo
     </Link>
   );
 }

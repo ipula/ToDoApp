@@ -9,15 +9,25 @@ interface RequestOptions {
   body?: unknown;
 }
 
+/** Parsed response body together with the response headers. */
+export interface ApiResponse<T> {
+  data: T;
+  headers: Headers;
+}
+
 /**
- * Sends a request to the API and returns the parsed JSON response.
+ * Sends a request to the API and returns the parsed JSON body plus headers.
+ * Use this when the response carries information in headers (e.g. paging counts).
  *
  * Every failure is converted into an ApiError, so callers never need to
  * check `response.ok` or handle raw fetch errors themselves:
  * - server unreachable          -> ApiError(status 0, "NETWORK_ERROR")
  * - error response from the API -> ApiError with the API's code and message
  */
-export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function requestWithHeaders<T>(
+  path: string,
+  options: RequestOptions = {},
+): Promise<ApiResponse<T>> {
   const { method = "GET", body } = options;
 
   let response: Response;
@@ -40,10 +50,14 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   }
 
   // 204 No Content (e.g. DELETE) has no body to parse.
-  if (response.status === 204) {
-    return undefined as T;
-  }
-  return (await response.json()) as T;
+  const data: unknown = response.status === 204 ? undefined : await response.json();
+  return { data: data as T, headers: response.headers };
+}
+
+/** Sends a request to the API and returns just the parsed JSON body. */
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { data } = await requestWithHeaders<T>(path, options);
+  return data;
 }
 
 /** Reads the API's error body, falling back to a generic error if it isn't JSON. */

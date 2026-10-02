@@ -27,3 +27,12 @@ export interface UpdateTodoInput {
   title?: string;
   description?: string;
 }
+
+/** One page of todos, with counts across the whole list (from response headers). */
+export interface TodoPage {
+  todos: Todo[];
+  /** Number of todos in total, across all pages. */
+  total: number;
+  /** Number of todos not yet done, across all pages. */
+  remaining: number;
+}

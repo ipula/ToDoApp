@@ -1,12 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { todoKeys } from "../api/queryKeys.ts";
 import { todosApi } from "../api/todosApi.ts";
-import type { Todo } from "../types.ts";
 
 /**
  * Creates a todo.
- * On success, the new todo is added to the top of the cached list
- * (matching the API's newest-first order), so no refetch is needed.
+ *
+ * A new todo goes to the top of page 1 and pushes one todo onto each
+ * following page, so every cached page is refreshed rather than patched.
  */
 export function useCreateTodo() {
   const queryClient = useQueryClient();
@@ -14,10 +14,8 @@ export function useCreateTodo() {
   return useMutation({
     mutationFn: todosApi.create,
     onSuccess: (created) => {
-      queryClient.setQueryData<Todo[]>(todoKeys.list(), (todos) =>
-        todos ? [created, ...todos] : undefined,
-      );
       queryClient.setQueryData(todoKeys.detail(created._id), created);
+      return queryClient.invalidateQueries({ queryKey: todoKeys.lists() });
     },
   });
 }
