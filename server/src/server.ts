@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { createApp } from "./app.ts";
 import { env } from "./infrastructure/config/env.ts";
+import { createContainer } from "./container.ts";
+import { MongoTodoRepository } from "./infrastructure/persistence/mongo/todo/MongoTodoRepository.ts";
 
 /** How long to wait for open requests to finish before forcing exit. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -17,7 +19,8 @@ async function main(): Promise<void> {
   await mongoose.connect(env.MONGODB_URI, { serverSelectionTimeoutMS: 5_000 });
   console.log("Connected to MongoDB");
 
-  const app = createApp({ corsOrigin: env.CORS_ORIGIN });
+  const { todoController } = createContainer(new MongoTodoRepository());
+  const app = createApp({ corsOrigin: env.CORS_ORIGIN, todoController });
 
   const server = app.listen(env.PORT, () => {
     console.log(`Server listening on http://localhost:${env.PORT}`);
