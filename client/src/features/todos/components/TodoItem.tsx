@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { getErrorMessage } from "../../../shared/api/ApiError.ts";
 import { useDeleteTodo } from "../hooks/useDeleteTodo.ts";
 import { useToggleTodo } from "../hooks/useToggleTodo.ts";
@@ -83,17 +84,26 @@ export function TodoItem({ todo }: TodoItemProps) {
                 No
               </button>
             </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setIsConfirmingDelete(true);
-              }}
-              aria-label={`Delete "${todo.title}"`}
-              className="rounded-md px-3 py-1 text-slate-500 hover:bg-red-50 hover:text-red-600"
-            >
-              Delete
-            </button>
+                    ) : (
+            <>
+              <Link
+                to={`/todos/${todo._id}/edit`}
+                aria-label={`Edit "${todo.title}"`}
+                className="rounded-md px-3 py-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              >
+                Edit
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsConfirmingDelete(true);
+                }}
+                aria-label={`Delete "${todo.title}"`}
+                className="rounded-md px-3 py-1 text-slate-500 hover:bg-red-50 hover:text-red-600"
+              >
+                Delete
+              </button>
+            </>
           )}
         </div>
       </div>
