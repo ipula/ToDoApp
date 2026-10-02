@@ -25,3 +25,18 @@ export interface UpdateTodoInput {
   title?: string;
   description?: string;
 }
+
+/** Which page of the list to return. `page` starts at 1. */
+export interface ListTodosQuery {
+  page: number;
+  limit: number;
+}
+
+/** A list of todos plus the counts the client needs for paging and headings. */
+export interface ListTodosResult {
+  todos: TodoDTO[];
+  /** Number of todos in total, across all pages. */
+  total: number;
+  /** Number of todos not yet done, across all pages. */
+  remaining: number;
+}

@@ -29,8 +29,9 @@ export function createApp({ corsOrigin, todoController }: AppOptions): Express {
   // Don't advertise the framework in response headers.
   app.disable("x-powered-by");
 
-  // Only allow browser requests from the configured client origin.
-  app.use(cors({ origin: corsOrigin }));
+  // Only allow browser requests from the configured client origin, and let
+  // them read the paging headers (browsers hide custom headers otherwise).
+  app.use(cors({ origin: corsOrigin, exposedHeaders: ["X-Total-Count", "X-Remaining-Count"] }));
 
   // Parse JSON bodies. A todo is small, so oversized payloads are
   // rejected early (the error handler responds with 413).

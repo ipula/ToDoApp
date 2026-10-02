@@ -1,6 +1,10 @@
 import type { Todo } from "../../../../domain/todo/Todo.ts";
 import type { TodoId } from "../../../../domain/todo/TodoId.ts";
-import type { TodoRepository } from "../../../../domain/todo/TodoRepository.ts";
+import type {
+  PageRequest,
+  TodoCountCriteria,
+  TodoRepository,
+} from "../../../../domain/todo/TodoRepository.ts";
 import { TodoModel, type TodoRecord } from "./TodoModel.ts";
 import { toTodoEntity, toTodoRecord } from "./todoRecordMapper.ts";
 
@@ -12,9 +16,19 @@ import { toTodoEntity, toTodoRecord } from "./todoRecordMapper.ts";
  * the domain never sees Mongoose types.
  */
 export class MongoTodoRepository implements TodoRepository {
-  async findAll(): Promise<Todo[]> {
-    const records = await TodoModel.find().sort({ createdAt: -1 }).lean<TodoRecord[]>();
+  async findAll(page?: PageRequest): Promise<Todo[]> {
+    // _id breaks ties between todos created in the same millisecond,
+    // so the order (and therefore each page) is always the same.
+    const query = TodoModel.find().sort({ createdAt: -1, _id: -1 });
+    if (page) {
+      query.skip(page.offset).limit(page.limit);
+    }
+    const records = await query.lean<TodoRecord[]>();
     return records.map(toTodoEntity);
+  }
+
+  async count(criteria: TodoCountCriteria = {}): Promise<number> {
+    return TodoModel.countDocuments(criteria.done === undefined ? {} : { done: criteria.done });
   }
 
   async findById(id: TodoId): Promise<Todo | null> {

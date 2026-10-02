@@ -1,6 +1,17 @@
 import type { Todo } from "./Todo.ts";
 import type { TodoId } from "./TodoId.ts";
 
+/** A slice of the newest-first list: skip `offset` todos, then take up to `limit`. */
+export interface PageRequest {
+  offset: number;
+  limit: number;
+}
+
+/** Optional conditions for counting todos. */
+export interface TodoCountCriteria {
+  done?: boolean;
+}
+
 /**
  * Port for todo persistence.
  *
@@ -8,8 +19,11 @@ import type { TodoId } from "./TodoId.ts";
  * so the domain and use cases never depend on MongoDB directly.
  */
 export interface TodoRepository {
-  /** Returns all todos, newest first. */
-  findAll(): Promise<Todo[]>;
+  /** Returns todos newest first: all of them, or one page when `page` is given. */
+  findAll(page?: PageRequest): Promise<Todo[]>;
+
+  /** Counts todos, optionally only those matching the criteria. */
+  count(criteria?: TodoCountCriteria): Promise<number>;
 
   /** Returns the todo, or null if it does not exist. */
   findById(id: TodoId): Promise<Todo | null>;

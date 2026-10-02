@@ -5,7 +5,11 @@ import type { GetTodo } from "../../../application/todo/use-cases/GetTodo.ts";
 import type { ListTodos } from "../../../application/todo/use-cases/ListTodos.ts";
 import type { ToggleTodo } from "../../../application/todo/use-cases/ToggleTodo.ts";
 import type { UpdateTodo } from "../../../application/todo/use-cases/UpdateTodo.ts";
-import { createTodoBodySchema, updateTodoBodySchema } from "../validation/todo.schemas.ts";
+import {
+  createTodoBodySchema,
+  listTodosQuerySchema,
+  updateTodoBodySchema,
+} from "../validation/todo.schemas.ts";
 
 /** The use cases the controller delegates to, injected by the container. */
 export interface TodoUseCases {
@@ -32,10 +36,20 @@ interface IdParams {
  */
 export class TodoController {
   constructor(private readonly useCases: TodoUseCases) {}
+  /**
+   * GET /api/todos and GET /api/todos?page=2&limit=10
+   *
+   * The body is always a plain array of todos, as the API spec requires.
+   * Counts for paging travel in headers, so the body's shape never changes.
+   */
+  list = async (req: Request, res: Response): Promise<void> => {
+    const query = listTodosQuerySchema.parse(req.query);
+    const { todos, total, remaining } = await this.useCases.listTodos.execute(query);
 
-  /** GET /api/todos */
-  list = async (_req: Request, res: Response): Promise<void> => {
-    const todos = await this.useCases.listTodos.execute();
+    res.set({
+      "X-Total-Count": String(total),
+      "X-Remaining-Count": String(remaining),
+    });
     res.json(todos);
   };
 

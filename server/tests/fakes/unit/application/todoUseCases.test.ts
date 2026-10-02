@@ -27,15 +27,40 @@ describe("todo use cases", () => {
     expect(dto).not.toHaveProperty("description");
   });
 
-  it("lists todos newest first", async () => {
+    it("lists todos newest first", async () => {
     const create = new CreateTodo(repo);
     await create.execute({ title: "First" });
     await new Promise((resolve) => setTimeout(resolve, 5));
     await create.execute({ title: "Second" });
 
-    const list = await new ListTodos(repo).execute();
+    const { todos } = await new ListTodos(repo).execute();
 
-    expect(list.map((t) => t.title)).toEqual(["Second", "First"]);
+    expect(todos.map((t) => t.title)).toEqual(["Second", "First"]);
+  });
+
+  it("returns one page plus totals across all pages", async () => {
+    const create = new CreateTodo(repo);
+    for (const title of ["One", "Two", "Three", "Four", "Five"]) {
+      await create.execute({ title });
+      await new Promise((resolve) => setTimeout(resolve, 2));
+    }
+    const [newest] = (await new ListTodos(repo).execute()).todos;
+    if (!newest) throw new Error("expected todos");
+    await new ToggleTodo(repo).execute(newest._id);
+
+    const result = await new ListTodos(repo).execute({ page: 2, limit: 2 });
+
+    expect(result.todos.map((t) => t.title)).toEqual(["Three", "Two"]);
+    expect(result.total).toBe(5);
+    expect(result.remaining).toBe(4);
+  });
+
+  it("returns an empty page past the end, with totals intact", async () => {
+    await new CreateTodo(repo).execute({ title: "Only one" });
+
+    const result = await new ListTodos(repo).execute({ page: 3, limit: 10 });
+
+    expect(result).toEqual({ todos: [], total: 1, remaining: 1 });
   });
 
   it("gets a single todo by id", async () => {
@@ -74,7 +99,7 @@ describe("todo use cases", () => {
 
     await new DeleteTodo(repo).execute(created._id);
 
-    expect(await new ListTodos(repo).execute()).toEqual([]);
+    expect((await new ListTodos(repo).execute()).todos).toEqual([]);
   });
 
   it("throws TodoNotFoundError for an unknown id", async () => {

@@ -1,6 +1,10 @@
 import { Todo, type TodoSnapshot } from "../../src/domain/todo/Todo.ts";
 import type { TodoId } from "../../src/domain/todo/TodoId.ts";
-import type { TodoRepository } from "../../src/domain/todo/TodoRepository.ts";
+import type {
+  PageRequest,
+  TodoCountCriteria,
+  TodoRepository,
+} from "../../src/domain/todo/TodoRepository.ts";
 
 /**
  * In-memory implementation of the repository port, used in unit tests.
@@ -15,11 +19,21 @@ import type { TodoRepository } from "../../src/domain/todo/TodoRepository.ts";
 export class InMemoryTodoRepository implements TodoRepository {
   private readonly store = new Map<string, TodoSnapshot>();
 
-  findAll(): Promise<Todo[]> {
-    const todos = [...this.store.values()]
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .map((snapshot) => Todo.restore(snapshot));
-    return Promise.resolve(todos);
+  findAll(page?: PageRequest): Promise<Todo[]> {
+    // Same order as MongoTodoRepository: newest first, id as tie-breaker.
+    const sorted = [...this.store.values()].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id),
+    );
+    const slice = page ? sorted.slice(page.offset, page.offset + page.limit) : sorted;
+    return Promise.resolve(slice.map((snapshot) => Todo.restore(snapshot)));
+  }
+
+  count(criteria: TodoCountCriteria = {}): Promise<number> {
+    const { done } = criteria;
+    const matching = [...this.store.values()].filter(
+      (snapshot) => done === undefined || snapshot.done === done,
+    );
+    return Promise.resolve(matching.length);
   }
 
   findById(id: TodoId): Promise<Todo | null> {

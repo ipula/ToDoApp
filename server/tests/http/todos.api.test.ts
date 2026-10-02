@@ -75,14 +75,59 @@ describe("Todos API", () => {
     });
   });
 
-  describe("GET /api/todos", () => {
-    it("returns all todos", async () => {
+    describe("GET /api/todos", () => {
+    it("returns all todos as an array when no page is given", async () => {
       await createTodo({ title: "One" });
       await createTodo({ title: "Two" });
 
       const res = await request(app).get("/api/todos").expect(200);
 
       expect(res.body).toHaveLength(2);
+      expect(res.headers["x-total-count"]).toBe("2");
+      expect(res.headers["x-remaining-count"]).toBe("2");
+    });
+
+    it("returns one page as an array, with totals in headers", async () => {
+      for (const title of ["One", "Two", "Three"]) {
+        await createTodo({ title });
+        await new Promise((resolve) => setTimeout(resolve, 2));
+      }
+
+      const res = await request(app).get("/api/todos?page=2&limit=2").expect(200);
+
+      expect(res.body).toHaveLength(1);
+      expect(res.body).toMatchObject([{ title: "One" }]);
+      expect(res.headers["x-total-count"]).toBe("3");
+    });
+
+    it("defaults to page 1 when only limit is given", async () => {
+      await createTodo({ title: "One" });
+      await createTodo({ title: "Two" });
+
+      const res = await request(app).get("/api/todos?limit=1").expect(200);
+
+      expect(res.body).toHaveLength(1);
+    });
+
+    it.each([
+      ["page=0", "page"],
+      ["page=abc", "page"],
+      ["page=1.5", "page"],
+      ["limit=0", "limit"],
+      ["limit=101", "limit"],
+    ])("returns 400 for invalid paging (%s)", async (query, field) => {
+      const res = await request(app).get(`/api/todos?${query}`).expect(400);
+
+      expect(res.body).toMatchObject({ error: { code: "VALIDATION_ERROR", details: [{ field }] } });
+    });
+
+    it("exposes the paging headers to browsers via CORS", async () => {
+      const res = await request(app)
+        .get("/api/todos")
+        .set("Origin", "http://localhost:5173")
+        .expect(200);
+
+      expect(res.headers["access-control-expose-headers"]).toBe("X-Total-Count,X-Remaining-Count");
     });
   });
 

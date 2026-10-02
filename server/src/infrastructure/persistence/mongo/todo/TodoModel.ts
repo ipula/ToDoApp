@@ -32,6 +32,7 @@ const todoSchema = new Schema<TodoRecord>(
 );
 
 // Supports "newest first" listing without an in-memory sort.
-todoSchema.index({ createdAt: -1 });
+// Supports "newest first" listing and paging without an in-memory sort.
+todoSchema.index({ createdAt: -1, _id: -1 });
 
 export const TodoModel = model<TodoRecord>("Todo", todoSchema);
