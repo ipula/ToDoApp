@@ -1,0 +1,61 @@
+import { ApiError, type ApiErrorResponse } from "./ApiError.ts";
+
+/** Empty in development: requests go to /api/... and Vite proxies them. */
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "";
+
+interface RequestOptions {
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  /** Serialized as JSON when present. */
+  body?: unknown;
+}
+
+/**
+ * Sends a request to the API and returns the parsed JSON response.
+ *
+ * Every failure is converted into an ApiError, so callers never need to
+ * check `response.ok` or handle raw fetch errors themselves:
+ * - server unreachable          -> ApiError(status 0, "NETWORK_ERROR")
+ * - error response from the API -> ApiError with the API's code and message
+ */
+export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { method = "GET", body } = options;
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(
+      0,
+      "NETWORK_ERROR",
+      "Can't reach the server. Check your connection and try again.",
+    );
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+
+  // 204 No Content (e.g. DELETE) has no body to parse.
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  return (await response.json()) as T;
+}
+
+/** Reads the API's error body, falling back to a generic error if it isn't JSON. */
+async function toApiError(response: Response): Promise<ApiError> {
+  try {
+    const { error } = (await response.json()) as ApiErrorResponse;
+    return new ApiError(response.status, error.code, error.message, error.details);
+  } catch {
+    return new ApiError(
+      response.status,
+      "UNKNOWN_ERROR",
+      "Something went wrong. Please try again.",
+    );
+  }
+}
